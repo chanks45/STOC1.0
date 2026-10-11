@@ -1,0 +1,538 @@
+/* =====================================================================
+   STOC Inc. // APEX CURVED PERFORMANCE CLUSTER
+   Dark carbon matte (#0f1115) · gunmetal bezel (#5a626a) · white (#f5f7fa) · needle (#ff4a1c)
+   ===================================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Background di luar lengkungan klaster transparan total */
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: transparent !important;
+  font-family: "Rajdhani", sans-serif;
+  user-select: none; -webkit-user-select: none;
+}
+button, input { font: inherit; }
+
+/* ===== COCKPIT & TEMA (kontrol --tx --ty --scale dipertahankan) ===== */
+#cockpit {
+  --hud: #ffb23a; --hud-rgb: 255, 178, 58;
+  --needle: #ff4a1c;
+  --ok: #46f08a; --warn: #ffb23a; --danger: #ff3b20;
+  position: fixed; right: 34px; bottom: 30px;
+  width: 640px; height: 304px;
+  transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--scale, 1));
+  transform-origin: right bottom;
+  background: transparent !important;
+  color: #f5f7fa;
+  z-index: 9999;
+}
+#cockpit.theme-amber { --hud: #ffb23a; --hud-rgb: 255, 178, 58; }   /* STOC Factory Amber */
+#cockpit.theme-white { --hud: #eef3ff; --hud-rgb: 238, 243, 255; }  /* Nismo Polar White */
+#cockpit.theme-cyan  { --hud: #3fe0ff; --hud-rgb: 63, 224, 255; }   /* Suzuka Apex Cyan */
+
+#cockpit.mode-move { cursor: move; }
+#cockpit.mode-resize { cursor: ns-resize; }
+
+/* ===== LAPISAN & POSISI ===== */
+.layer { position: absolute; left: 0; top: 0; width: 640px; height: 304px; pointer-events: none; overflow: visible; }
+#clusterBase { z-index: 1; pointer-events: auto; }
+.logo-glow {
+  position: absolute; left: 270px; top: 94px; width: 120px; height: 120px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(var(--hud-rgb), .38) 28%, rgba(var(--hud-rgb), 0) 68%);
+  z-index: 2; pointer-events: none;
+}
+.cluster-logo {
+  position: absolute; left: 307px; top: 131px; width: 46px; height: 46px;
+  object-fit: contain; border-radius: 50%; z-index: 3; pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(var(--hud-rgb), .7));
+}
+#clusterNeedle { z-index: 4; }
+.turn, .speed-wrap, .pod { position: absolute; z-index: 5; }
+
+/* ===== SKALA TACHOMETER ===== */
+#dialMarks { filter: drop-shadow(0 0 2px rgba(var(--hud-rgb), .55)); }
+#dialMarks line { stroke: #f5f7fa; stroke-linecap: butt; }
+#dialMarks line.minor { stroke: #aab1b8; }
+#dialMarks line.red { stroke: #ff3b20; }
+#dialMarks .num { font: 700 20px "Barlow Condensed", "Rajdhani", sans-serif; fill: #f5f7fa; text-anchor: middle; dominant-baseline: central; }
+#dialMarks .num.red { fill: #ff4a30; }
+#dialMarks .redband { fill: none; stroke: #ff3b20; stroke-width: 4; opacity: .9; }
+#dialMarks .rpm-x { font: 600 8px "Rajdhani", sans-serif; fill: rgba(var(--hud-rgb), .9); letter-spacing: 2px; text-anchor: middle; }
+.badge-text { font: 700 11px "Rajdhani", sans-serif; letter-spacing: 3px; fill: #05060a; stroke: #6b737a; stroke-width: .35; paint-order: stroke; }
+
+/* ===== JARUM ===== */
+#needle .needle-body { filter: drop-shadow(0 0 4px rgba(255, 74, 28, .95)); }
+
+/* ===== SHIFT LIGHTS ===== */
+.led { fill: #191c21; stroke: #000; stroke-width: 1.2; }
+.led.on.g { fill: #35ff6a; filter: drop-shadow(0 0 5px #35ff6a); }
+.led.on.y { fill: #ffd21a; filter: drop-shadow(0 0 5px #ffd21a); }
+.led.on.r { fill: #ff2a1a; filter: drop-shadow(0 0 6px #ff2a1a); }
+#cockpit.shift-blink .led { fill: #ff2a1a; filter: drop-shadow(0 0 6px #ff2a1a); animation: ledBlink .12s steps(1) infinite alternate; }
+@keyframes ledBlink { 0% { opacity: 1; } 100% { opacity: .08; } }
+
+/* ===== KECEPATAN DIGITAL ===== */
+.speed-wrap { left: 270px; top: 192px; width: 120px; text-align: center; }
+#speedValue {
+  font: 800 48px/1 "Barlow Condensed", "Rajdhani", sans-serif; letter-spacing: 2px; color: #f5f7fa;
+  text-shadow: 0 0 8px rgba(var(--hud-rgb), .45);
+}
+#speedUnit { display: block; margin-top: 1px; font: 600 12px "Rajdhani", sans-serif; letter-spacing: 4px; color: rgb(var(--hud-rgb)); }
+
+/* ===== SEIN ===== */
+.turn { top: 70px; width: 28px; height: 28px; opacity: .55; }
+.turn.left { left: 212px; }
+.turn.right { left: 420px; }
+.turn svg { width: 100%; height: 100%; }
+.turn svg path { fill: #26352c; stroke: #0a0b0e; stroke-width: 1; }
+.turn.active { opacity: 1; animation: turnBlink .66s steps(1) infinite; }
+.turn.active svg path { fill: var(--ok); filter: drop-shadow(0 0 6px var(--ok)); }
+@keyframes turnBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .12; } }
+
+/* ===== POD SAYAP ===== */
+.pod.left { left: 26px; top: 112px; width: 162px; transform: skewY(-6deg); transform-origin: left top; }
+.pod.right { left: 464px; top: 108px; width: 152px; transform: skewY(6deg); transform-origin: right top; }
+
+.fluid { margin-bottom: 8px; }
+.fluid-head { display: flex; justify-content: space-between; align-items: baseline; font: 600 12px "Rajdhani", sans-serif; letter-spacing: 3px; color: #cfd5db; }
+.fluid-head b { font: 700 16px "Barlow Condensed", sans-serif; letter-spacing: 1px; color: #f5f7fa; }
+.fluid-bar {
+  position: relative; height: 12px; margin-top: 2px; border-radius: 2px; overflow: hidden;
+  background: #07080b; border: 1px solid #3b4147; box-shadow: inset 0 2px 4px #000;
+}
+.fluid-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(180deg, rgba(255,255,255,.35), rgb(var(--hud-rgb)) 40%, rgba(var(--hud-rgb), .6)); box-shadow: 0 0 8px rgba(var(--hud-rgb), .7); transition: width .25s ease; }
+.fluid-bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 7px, #07080b 7px 9px); }
+.fluid.health .fluid-bar i { background: linear-gradient(180deg, rgba(255,255,255,.35), var(--ok) 40%, #1fa65a); box-shadow: 0 0 8px rgba(70, 240, 138, .6); }
+#cockpit.hp-hurt .fluid.health .fluid-bar i { background: linear-gradient(180deg, rgba(255,255,255,.35), var(--warn) 40%, #c27c10); box-shadow: 0 0 8px rgba(255, 178, 58, .6); }
+#cockpit.hp-weak .fluid.health .fluid-bar i { background: linear-gradient(180deg, rgba(255,255,255,.35), var(--danger) 40%, #a01a08); box-shadow: 0 0 8px rgba(255, 59, 32, .7); }
+#cockpit.fuel-critical #fuelGauge .fluid-bar i { background: linear-gradient(180deg, rgba(255,255,255,.35), var(--danger) 40%, #a01a08); box-shadow: 0 0 8px rgba(255, 59, 32, .7); animation: lowBlink .8s steps(1) infinite; }
+#cockpit.fuel-critical #fuelValue, #cockpit.health-critical #healthValue { color: var(--danger); }
+@keyframes lowBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .35; } }
+
+.status-icons { display: flex; gap: 12px; align-items: center; margin-top: 4px; }
+.vehicle-indicator { width: 26px; height: 26px; color: #3a3f46; transition: color .2s, filter .2s; }
+.vehicle-indicator svg { width: 100%; height: 100%; }
+.vehicle-indicator.active { color: var(--ok); filter: drop-shadow(0 0 5px currentColor); }
+.vehicle-indicator.active.high { color: #4aa8ff; }
+.vehicle-indicator.active.warn { color: var(--warn); }
+.vehicle-indicator.active.danger { color: var(--danger); animation: lowBlink 1s steps(1) infinite; }
+
+/* Gear billet aluminium */
+.gear-box { display: flex; gap: 8px; align-items: center; }
+.gear-big {
+  flex: 0 0 46px; height: 46px; display: grid; place-items: center; border-radius: 6px;
+  font: 800 34px/1 "Barlow Condensed", sans-serif; color: #0f1115;
+  background: linear-gradient(145deg, #d3d8dc, #6a727a 55%, #9aa1a8);
+  border: 1px solid #1a1d22; box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 2px 0 rgba(0,0,0,.7);
+}
+.gear-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; flex: 1; }
+.gear-strip i { font: 700 12px "Barlow Condensed", sans-serif; font-style: normal; text-align: center; padding: 2px 0; color: #6b737a; background: #0a0b0e; border: 1px solid #2b3036; border-radius: 2px; }
+.gear-strip i.on { color: #0f1115; background: rgb(var(--hud-rgb)); box-shadow: 0 0 8px rgba(var(--hud-rgb), .8); border-color: transparent; }
+
+.clock { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; }
+.clock span { font: 700 22px "Barlow Condensed", sans-serif; letter-spacing: 2px; color: #f5f7fa; text-shadow: 0 0 6px rgba(var(--hud-rgb), .5); }
+.clock em { font-style: normal; animation: colonBlink 1s steps(1) infinite; }
+.clock small { font: 600 10px "Rajdhani", sans-serif; letter-spacing: 2px; color: rgb(var(--hud-rgb)); }
+@keyframes colonBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .15; } }
+
+.odo-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.odo-digits { display: flex; gap: 1px; }
+.odo-digits i {
+  width: 14px; height: 21px; display: grid; place-items: center; font-style: normal;
+  font: 700 15px "Barlow Condensed", sans-serif; color: #f5f7fa;
+  background: linear-gradient(180deg, #05060a, #272c33 50%, #05060a); border: 1px solid #3b4147; border-radius: 1px;
+}
+.odo-digits i.dec { color: #0f1115; background: linear-gradient(180deg, #aeb5bb, #eef1f3 50%, #aeb5bb); }
+.odo-unit { font: 600 11px "Rajdhani", sans-serif; letter-spacing: 2px; color: #aab1b8; }
+
+/* ===== STATUS MESIN: MATI / BOOTING ===== */
+.backlight, .face-lit, .logo-glow { transition: opacity 1.6s steps(6, end); }
+#cockpit.engine-off:not(.booting) .backlight,
+#cockpit.engine-off:not(.booting) .face-lit,
+#cockpit.engine-off:not(.booting) .logo-glow { opacity: .3; transition: opacity .9s ease; }
+#cockpit.engine-off:not(.booting) #needle .needle-body { filter: none; }
+#cockpit.engine-off:not(.booting) .cluster-logo { filter: none; opacity: .7; }
+#cockpit.booting .backlight, #cockpit.booting .face-lit, #cockpit.booting .logo-glow { animation: lightUp 1.8s steps(6, end) both; }
+@keyframes lightUp { 0% { opacity: 0; } 100% { opacity: 1; } }
+
+/* ===== OVERSPEED: VISUAL SAJA (TANPA AUDIO) ===== */
+.perimeter { opacity: 0; }
+#cockpit.overspeed .perimeter { animation: redPulse .6s ease-in-out infinite alternate; }
+@keyframes redPulse {
+  0%   { opacity: .3; filter: drop-shadow(0 0 4px #ff2a1a); }
+  100% { opacity: 1;  filter: drop-shadow(0 0 16px #ff2a1a) drop-shadow(0 0 30px rgba(255, 42, 26, .7)); }
+}
+#cockpit.overspeed #speedValue { color: #ff5a22; text-shadow: 0 0 8px #ff2a1a, 0 0 22px rgba(255, 42, 26, .75); animation: speedHot .5s ease-in-out infinite alternate; }
+#cockpit.overspeed #speedUnit { color: #ff8a3a; }
+@keyframes speedHot { 0% { color: #ff3b20; } 100% { color: #ffb23a; } }
+
+/* ===== MENU SETTING & MUSIC PLAYER (di atas lengkungan klaster) ===== */
+
+/* ===== MENU SETTING & MUSIC PLAYER (tetap melayang di atas kepala) ===== */
+#settingsMenu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10px);
+  padding: 12px;
+  background: rgba(4, 10, 20, 0.94);
+  border: 1px solid var(--hud);
+  border-radius: 12px;
+  box-shadow: 0 0 16px rgba(var(--hud-rgb), 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px) scale(0.96);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  cursor: default;
+  z-index: 10000;
+}
+
+#settingsMenu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.settings-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 700 11px "Orbitron", sans-serif;
+  letter-spacing: 1px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(var(--hud-rgb), 0.25);
+}
+
+.settings-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--hud);
+  box-shadow: 0 0 8px var(--hud);
+  border-radius: 50%;
+}
+
+.icon-button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--hud);
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.menu-btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.menu-btns button {
+  flex: 1;
+  padding: 7px 2px;
+  font: 700 11px "Orbitron", sans-serif;
+  letter-spacing: 0.5px;
+  color: var(--hud);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--hud);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.menu-btns button:hover,
+.menu-btns button.active {
+  background: var(--hud);
+  color: #001018;
+}
+
+/* ===== MUSIC PLAYER EMBEDDED (GAYA SAMC) ===== */
+.music-panel {
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px solid rgba(var(--hud-rgb), 0.25);
+  border-radius: 8px;
+  background: rgba(var(--hud-rgb), 0.05);
+}
+
+.music-now-playing {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.music-video-wrap {
+  position: relative;
+  width: 90px;
+  height: 52px;
+  flex: 0 0 90px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #080a0e;
+  border: 1px solid rgba(var(--hud-rgb), 0.25);
+}
+
+/* Iframe disembunyikan agar audio jalan tanpa layar hitam di FiveM */
+.music-video-wrap iframe {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.music-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  object-fit: cover;
+}
+
+.music-cover.show { display: block; }
+
+.music-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.music-placeholder.hide { display: none; }
+.music-placeholder-note { font-size: 22px; }
+
+.music-track-meta { min-width: 0; flex: 1; }
+
+#music-track-title {
+  font: 700 10px "Orbitron", sans-serif;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#music-track-subtitle {
+  margin-top: 2px;
+  font-size: 8px;
+  color: rgba(var(--hud-rgb), 0.65);
+}
+
+.music-progress-row {
+  display: grid;
+  grid-template-columns: 28px 1fr 28px;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 8px;
+  color: var(--hud);
+}
+
+.music-range {
+  width: 100%;
+  accent-color: var(--hud);
+  cursor: pointer;
+  height: 8px;
+}
+
+.music-main-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 6px 0 4px;
+}
+
+.music-control-btn {
+  background: transparent;
+  border: 0;
+  color: var(--hud);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.music-play-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--hud);
+  color: #05101a;
+  border: 0;
+  font-size: 11px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.music-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.music-icon-btn {
+  background: transparent;
+  border: 0;
+  color: var(--hud);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.music-small-btn {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(var(--hud-rgb), 0.15);
+  border: 1px solid var(--hud);
+  color: var(--hud);
+  font: 700 10px "Orbitron", sans-serif;
+  cursor: pointer;
+}
+
+.music-add-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.music-add-row.hide { display: none !important; }
+
+.music-add-row input {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(var(--hud-rgb), 0.4);
+  border-radius: 4px;
+  color: #fff;
+  padding: 4px 6px;
+  font-size: 9px;
+  outline: none;
+}
+
+.music-add-primary {
+  background: var(--hud);
+  color: #05101a;
+}
+
+.music-tools-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.music-tool-btn {
+  flex: 1;
+  height: 24px;
+  background: rgba(var(--hud-rgb), 0.1);
+  border: 1px solid var(--hud);
+  border-radius: 4px;
+  color: var(--hud);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.music-tool-btn.active {
+  background: var(--hud);
+  color: #05101a;
+}
+
+.music-playlist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(var(--hud-rgb), 0.2);
+  font: 700 8px "Orbitron", sans-serif;
+}
+
+.music-text-btn {
+  background: transparent;
+  border: 0;
+  color: var(--hud);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.music-playlist {
+  max-height: 70px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.music-empty {
+  padding: 6px;
+  text-align: center;
+  font-size: 8px;
+  opacity: 0.5;
+}
+
+.music-track-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.music-track-row:hover,
+.music-track-row.active {
+  background: rgba(var(--hud-rgb), 0.15);
+}
+
+.music-track-thumb {
+  width: 28px;
+  height: 16px;
+  flex: 0 0 28px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #000;
+}
+
+.music-track-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.music-track-copy { min-width: 0; flex: 1; }
+.music-track-copy strong { display: block; font-size: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-track-index { font-size: 7px; opacity: 0.5; }
+
+#settingsHint {
+  margin-top: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--hud);
+  letter-spacing: 0.4px;
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: space-between;
+  font: 600 8px "Orbitron", sans-serif;
+  opacity: 0.45;
+  border-top: 1px solid rgba(var(--hud-rgb), 0.2);
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+/* ===== OVERRIDE: STYLING BRUSHED METAL TUNING TOOL ===== */
+#settingsMenu {
+  left: auto; right: 0; width: 430px; bottom: calc(100% + 8px);
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #2c3137 0%, #15181c 16%, #0f1115 100%);
+  border: 1px solid #5a626a;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px #000, inset 0 1px 0 rgba(255,255,255,.2), 0 12px 30px rgba(0,0,0,.65);
+}
+.settings-heading { font-family: "Rajdhani", sans-serif; font-size: 14px; letter-spacing: 3px; color: #f5f7fa; border-bottom: 1px solid rgba(255,255,255,.12); }
+.settings-heading .settings-dot { background: var(--needle); box-shadow: 0 0 8px var(--needle); }
+.menu-btns button { font-family: "Rajdhani", sans-serif; font-size: 13px; letter-spacing: 1.5px; border-radius: 4px; color: #e6eaee; border-color: #5a626a; background: linear-gradient(180deg, #3a4046, #1b1e23); }
+.menu-btns button:hover, .menu-btns button.active { background: var(--hud); color: #0f1115; border-color: var(--hud); }
+.music-panel { border-radius: 6px; border-color: rgba(255,255,255,.14); background: rgba(0,0,0,.28); }
+.settings-footer { font-family: "Rajdhani", sans-serif; font-size: 10px; letter-spacing: 2px; }
